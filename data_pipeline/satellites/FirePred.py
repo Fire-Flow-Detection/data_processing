@@ -13,13 +13,16 @@ class FirePred:
         # Digital elevation model
         self.srtm = ee.Image("USGS/SRTMGL1_003")
         self.landcover = ee.ImageCollection("MODIS/061/MCD12Q1")
-        self.weather = ee.ImageCollection("IDAHO_EPSCOR/GRIDMET")
-        self.weather_forecast = ee.ImageCollection('NOAA/GFS0P25')
-        self.drought = ee.ImageCollection("GRIDMET/DROUGHT")
+        #self.weather = ee.ImageCollection("IDAHO_EPSCOR/GRIDMET")
+        self.weather = ee.ImageCollection("ECMWF/ERA5_LAND/HOURLY")
+        #self.weather_forecast = ee.ImageCollection('NOAA/GFS0P25')
+        self.drought = ee.ImageCollection("IDAHO_EPSCOR/TERRACLIMATE")
         # VIIRS surface reflectance
         self.viirs = ee.ImageCollection('NASA/VIIRS/002/VNP09GA')
         # VIIRS active fire product
-        self.viirs_af = ee.FeatureCollection('projects/grand-drive-285514/assets/afall')
+        #self.viirs_af = ee.FeatureCollection('NASA/VIIRS/002/VNP14A1')
+        # VIIRS active fire product - use daily gridded fire mask
+        self.viirs_firemask = ee.ImageCollection("NASA/VIIRS/002/VNP14A1")
         # VIIRS vegetation index
         self.viirs_veg_idx = ee.ImageCollection("NASA/VIIRS/002/VNP13A1")
 
@@ -46,56 +49,100 @@ class FirePred:
         # Weather Data
         # Median is used to turn ee.ImageCollection into a single ee.Image.
         # Each ImageCollection should only contain a single image at this point.
+        #weather = self.weather.filterDate(start_time, end_time).filterBounds(geometry)
+        #precipitation = weather.select('pr').median().rename("total precipitation")
+        #wind_direction = weather.select('th').median().rename("wind direction")
+        #temperature_min = weather.select('tmmn').median().rename("minimum temperature")
+        #temperature_max = weather.select('tmmx').median().rename("maximum temperature")
+        #energy_release_component = weather.select('erc').median().rename("energy release component")
+        #specific_humidity = weather.select('sph').median().rename("specific humidity")
+        #wind_velocity = weather.select('vs').median().rename("wind speed")
         weather = self.weather.filterDate(start_time, end_time).filterBounds(geometry)
-        precipitation = weather.select('pr').median().rename("total precipitation")
-        wind_direction = weather.select('th').median().rename("wind direction")
-        temperature_min = weather.select('tmmn').median().rename("minimum temperature")
-        temperature_max = weather.select('tmmx').median().rename("maximum temperature")
-        energy_release_component = weather.select('erc').median().rename("energy release component")
-        specific_humidity = weather.select('sph').median().rename("specific humidity")
-        wind_velocity = weather.select('vs').median().rename("wind speed")
-
+        # Total daily precipitation: sum of hourly total_precipitation_hourly (units: m)
+        precip_col = weather.select("total_precipitation_hourly")
+        precipitation = precip_col.reduce(ee.Reducer.sum()).rename("total precipitation")
+        # 2m temperature: use daily min/max from hourly
+        temp_col = weather.select("temperature_2m")
+        temperature_min = temp_col.reduce(ee.Reducer.min()).rename("minimum temperature")
+        temperature_max = temp_col.reduce(ee.Reducer.max()).rename("maximum temperature")
+        # energy_release_component: use potential_evaporation as proxy
+        pe_col = weather.select("potential_evaporation")
+        energy_release_component = pe_col.reduce(ee.Reducer.mean()).rename("energy release component")
+         # Specific humidity (approx) from dewpoint & surface pressure
+        dew_col = weather.select("dewpoint_temperature_2m")
+        sp_col = weather.select("surface_pressure")
+        dew_2m = dew_col.reduce(ee.Reducer.mean())  # Image
+        sp = sp_col.reduce(ee.Reducer.mean())       # Image
+        Td_C = dew_2m.subtract(273.15)
+        es_hPa = Td_C.multiply(17.67).divide(Td_C.add(243.5)).exp().multiply(6.112)
+        es_Pa = es_hPa.multiply(100.0)
+        q = es_Pa.multiply(0.622).divide(
+            sp.subtract(es_Pa.multiply(0.378))
+        )
+        specific_humidity = q.rename("specific humidity")
+        # 10m wind speed & direction
+        u10_col = weather.select("u_component_of_wind_10m")
+        v10_col = weather.select("v_component_of_wind_10m")
+        u10 = u10_col.reduce(ee.Reducer.mean())  # Image
+        v10 = v10_col.reduce(ee.Reducer.mean())  # Image
+        wind_speed_img = u10.multiply(u10).add(v10.multiply(v10)).sqrt()
+        wind_velocity = wind_speed_img.rename("wind speed")
+        wind_dir_img = v10.atan2(u10).multiply(180.0 / math.pi)
+        wind_direction = wind_dir_img.rename("wind direction")
         # Take forecasts made at midnight (00), and that tell us something about the hours between 01 and 24.
         # Important: The forecasts at 00 contain six features instead of nine, like all others.
-        weather_forecast = self.weather_forecast.filter(
-            ee.Filter.gte("system:index", today_string + "00F01")).filter(
-            ee.Filter.lte("system:index", today_string + "00F24")
-        ).filterBounds(geometry)
-        forecast_temperature = weather_forecast.select("temperature_2m_above_ground").mean().rename(
-            "forecast temperature")
-        forecast_specific_humidity = weather_forecast.select("specific_humidity_2m_above_ground").mean().rename(
-            "forecast specific humidity")
-        forecast_u_wind = weather_forecast.select("u_component_of_wind_10m_above_ground").mean()
-        forecast_v_wind = weather_forecast.select("v_component_of_wind_10m_above_ground").mean()
+        #weather_forecast = self.weather_forecast.filter(
+        #    ee.Filter.gte("system:index", today_string + "00F01")).filter(
+        #    ee.Filter.lte("system:index", today_string + "00F24")
+        #).filterBounds(geometry)
+        #forecast_temperature = weather_forecast.select("temperature_2m_above_ground").mean().rename(
+        #    "forecast temperature")
+        #forecast_specific_humidity = weather_forecast.select("specific_humidity_2m_above_ground").mean().rename(
+        #    "forecast specific humidity")
+        #forecast_u_wind = weather_forecast.select("u_component_of_wind_10m_above_ground").mean()
+        #forecast_v_wind = weather_forecast.select("v_component_of_wind_10m_above_ground").mean()
 
         # Transform from u/v to direction and speed, to align with GRIDMET and DEM data
-        forecast_wind_speed = forecast_u_wind.multiply(forecast_u_wind).add(
-            forecast_v_wind.multiply(forecast_v_wind)).sqrt().rename("forecast wind speed")
-        forecast_wind_direction = forecast_v_wind.divide(forecast_u_wind).atan()
-        forecast_wind_direction = forecast_wind_direction.divide(2 * math.pi).multiply(360).rename(
-            "forecast wind direction")
+        #forecast_wind_speed = forecast_u_wind.multiply(forecast_u_wind).add(
+        #    forecast_v_wind.multiply(forecast_v_wind)).sqrt().rename("forecast wind speed")
+        #forecast_wind_direction = forecast_v_wind.divide(forecast_u_wind).atan()
+        #forecast_wind_direction = forecast_wind_direction.divide(2 * math.pi).multiply(360).rename(
+        #   "forecast wind direction")
 
         # Rain forecasts were changed: From rain within the one-hour interval to cumulative rain during the day so far
-        forecast_rain_change_date = datetime.datetime.strptime("2019-11-07T06:00:00", '%Y-%m-%dT%H:%M:%S')
-        forecast_rain = weather_forecast.select("total_precipitation_surface")
-        if today <= forecast_rain_change_date:
-            forecast_rain = forecast_rain.reduce(ee.Reducer.sum())
-        else:
-            forecast_rain = forecast_rain.reduce(ee.Reducer.last())
-        forecast_rain.rename("forecast total precipitation")
+        #forecast_rain_change_date = datetime.datetime.strptime("2019-11-07T06:00:00", '%Y-%m-%dT%H:%M:%S')
+        #forecast_rain = weather_forecast.select("total_precipitation_surface")
+        #if today <= forecast_rain_change_date:
+        #    forecast_rain = forecast_rain.reduce(ee.Reducer.sum())
+        #else:
+        #    forecast_rain = forecast_rain.reduce(ee.Reducer.last())
+        #forecast_rain.rename("forecast total precipitation")
+
         # Elevation Data
         elevation = self.srtm.select('elevation')
         slope = ee.Terrain.slope(elevation)
         aspect = ee.Terrain.aspect(elevation)
 
         # Drought Data
-        # Only available every fifth day, but we can find the valid entry via time_start and time_end
-        drought_index = self.drought \
-            .filter(ee.Filter.lte("system:time_start", today_timestamp)) \
-            .filter(ee.Filter.gte("system:time_end", today_timestamp)) \
-            .select('pdsi').median()
+        # Only available monthly, 30-day rolling average of TerraClimate PDSI
+        window_start = today - datetime.timedelta(days=30)
+        window_start_str = window_start.strftime("%Y-%m-%d")
+        today_str = today.strftime("%Y-%m-%d")
+
+        # Select TerraClimate images from the previous 30 days.
+        # This will pick 1 or 2 monthly images depending on the month boundary.
+        drought_index = (
+            self.drought
+                .filterDate(window_start_str, today_str)
+                .filterBounds(geometry)
+                .select("pdsi")
+                .mean()                        # avg PDSI over last 30 days
+                .rename("drought_index")
+        )
+        
+        # Land Cover Data
         igbp_land_cover = self.landcover.filterDate(start_time[:4] + '-01-01', start_time[:4] + '-12-31').filterBounds(
-            geometry).select('LC_Type1').median()
+            geometry).select('LC_Type1').median().rename("land_cover")
 
         # Turn acq_time (String) into acq_hour (int)
         def add_acq_hour(feature):
@@ -113,21 +160,33 @@ class FirePred:
 
         # VIIRS AF consists only of points, so we need to turn them into a raster image.
         # We also filter out low confidence detections, since they are most likely false positives. 
-        viirs_af_img = self.viirs_af.map(add_acq_hour).filterBounds(geometry) \
-            .filter(ee.Filter.gte('acq_date', start_time[:-6])) \
-            .filter(ee.Filter.lt('acq_date', (
-                datetime.datetime.strptime(end_time[:-6], '%Y-%m-%d') + datetime.timedelta(1)).strftime(
-            '%Y-%m-%d'))) \
-            .filter(ee.Filter.neq('confidence', 'l')).map(self.get_buffer) \
-            .reduceToImage(['acq_hour'], ee.Reducer.last()) \
-            .rename(['active fire'])
+        #viirs_af_img = self.viirs_af.map(add_acq_hour).filterBounds(geometry) \
+        #    .filter(ee.Filter.gte('acq_date', start_time[:-6])) \
+        #    .filter(ee.Filter.lt('acq_date', (
+        #        datetime.datetime.strptime(end_time[:-6], '%Y-%m-%d') + datetime.timedelta(1)).strftime(
+        #    '%Y-%m-%d'))) \
+        #    .filter(ee.Filter.neq('confidence', 'l')).map(self.get_buffer) \
+        #    .reduceToImage(['acq_hour'], ee.Reducer.last()) \
+        #    .rename(['active fire'])
+        # VIIRS daily gridded fire mask (VNP14A1)
+        firemask = (
+            self.viirs_firemask
+                .filterDate(start_time, end_time)
+                .filterBounds(geometry)
+                .select("FireMask")        # Select fire mask band
+                .max()                     # Get maximum value over the day
+        )
+
+        # Create binary active fire image
+        # Here we simply use > 7 to keep high/medium confidence fire points, you can also fine-tune the threshold later
+        viirs_af_img = firemask.gt(7).rename("active fire")
 
         return ee.ImageCollection(ee.Image(
             [viirs_img, viirs_veg_idc, precipitation, wind_velocity, wind_direction, temperature_min, temperature_max,
              energy_release_component, specific_humidity, slope, aspect,
              elevation, drought_index, igbp_land_cover,
-             forecast_rain, forecast_wind_speed, forecast_wind_direction, forecast_temperature,
-             forecast_specific_humidity,
+             #forecast_rain, forecast_wind_speed, forecast_wind_direction, forecast_temperature,
+             #forecast_specific_humidity,
              viirs_af_img]))
 
     def get_buffer(self, feature):
