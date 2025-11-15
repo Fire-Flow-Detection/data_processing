@@ -1,0 +1,53 @@
+output_bucket: firespreadpredictiontest
+rectangular_size: 0.5
+year: 2019
+fire_22869697:
+  latitude: 60.26865119048626
+  longitude: -126.25898970512613
+  start: 2019-05-26
+  end: 2019-06-14
+fire_22869701:
+  latitude: 59.8445090276103
+  longitude: -124.24608238213791
+  start: 2019-05-26
+  end: 2019-06-02
+fire_23410980:
+  latitude: 55.387716914995224
+  longitude: -127.7692265150418
+  start: 2019-10-03
+  end: 2019-10-11
+fire_23160454:
+  latitude: 49.22370811084701
+  longitude: -119.47394954706856
+  start: 2019-08-04
+  end: 2019-08-16
+fire_23160431:
+  latitude: 57.87646924074416
+  longitude: -131.9996590314132
+  start: 2019-08-04
+  end: 2019-08-15
+fire_22712779:
+  latitude: 52.88974921560902
+  longitude: -123.9970139041496
+  start: 2019-03-16
+  end: 2019-03-31
+fire_23410974:
+  latitude: 55.726286394343305
+  longitude: -128.86950430157668
+  start: 2019-10-09
+  end: 2019-10-19
+fire_22712782:
+  latitude: 52.412263479079186
+  longitude: -125.20739274450054
+  start: 2019-03-19
+  end: 2019-03-31
+fire_22712773:
+  latitude: 53.19442053858829
+  longitude: -124.02785681429484
+  start: 2019-03-22
+  end: 2019-04-03
+fire_22712776:
+  latitude: 53.036429759733906
+  longitude: -124.68729731434188
+  start: 2019-03-18
+  end: 2019-04-01

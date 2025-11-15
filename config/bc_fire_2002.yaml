@@ -1,0 +1,28 @@
+output_bucket: firespreadpredictiontest
+rectangular_size: 0.5
+year: 2002
+fire_2634999:
+  latitude: 50.10476434338749
+  longitude: -118.66440614983505
+  start: 2002-11-03
+  end: 2002-11-13
+fire_1852643:
+  latitude: 53.199161525351585
+  longitude: -123.00993878031626
+  start: 2002-04-19
+  end: 2002-04-28
+fire_2523655:
+  latitude: 59.61123794627187
+  longitude: -123.85265970545464
+  start: 2002-10-03
+  end: 2002-10-07
+fire_2634989:
+  latitude: 50.97608282780755
+  longitude: -120.75244625607664
+  start: 2002-11-06
+  end: 2002-11-22
+fire_2635004:
+  latitude: 50.04435854466895
+  longitude: -120.0003428701368
+  start: 2002-11-04
+  end: 2002-11-12

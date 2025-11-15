@@ -1,0 +1,63 @@
+output_bucket: firespreadpredictiontest
+rectangular_size: 0.5
+year: 2016
+fire_19357790:
+  latitude: 56.10267020839003
+  longitude: -122.01587675555544
+  start: 2016-03-24
+  end: 2016-04-02
+fire_19410649:
+  latitude: 56.61239655259904
+  longitude: -121.14978926706682
+  start: 2016-04-17
+  end: 2016-04-21
+fire_19491191:
+  latitude: 56.3320395704891
+  longitude: -121.687082732371
+  start: 2016-05-15
+  end: 2016-05-25
+fire_19491161:
+  latitude: 56.55497012377438
+  longitude: -121.27109536918827
+  start: 2016-05-02
+  end: 2016-05-12
+fire_19663709:
+  latitude: 59.822153418869135
+  longitude: -129.27086244689136
+  start: 2016-07-29
+  end: 2016-08-24
+fire_19357792:
+  latitude: 56.09656598608915
+  longitude: -120.68061916354428
+  start: 2016-03-27
+  end: 2016-04-01
+fire_19357770:
+  latitude: 56.98190939822528
+  longitude: -121.49632436344676
+  start: 2016-03-27
+  end: 2016-04-03
+fire_19408714:
+  latitude: 54.88866770625296
+  longitude: -123.83444900374468
+  start: 2016-04-03
+  end: 2016-04-21
+fire_19491053:
+  latitude: 56.62371999967064
+  longitude: -120.1186814772139
+  start: 2016-05-01
+  end: 2016-05-28
+fire_19355014:
+  latitude: 53.84622364255433
+  longitude: -123.7763678225835
+  start: 2016-03-21
+  end: 2016-03-28
+fire_19355037:
+  latitude: 52.16251825005331
+  longitude: -122.4682632391848
+  start: 2016-03-15
+  end: 2016-03-29
+fire_19355006:
+  latitude: 54.75042883455151
+  longitude: -127.0553146938166
+  start: 2016-03-14
+  end: 2016-03-29

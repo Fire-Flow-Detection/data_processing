@@ -1,0 +1,53 @@
+output_bucket: firespreadpredictiontest
+rectangular_size: 0.5
+year: 2005
+fire_5605557:
+  latitude: 51.49031137620001
+  longitude: -121.29738449367564
+  start: 2005-02-24
+  end: 2005-03-06
+fire_5605548:
+  latitude: 51.70943794040187
+  longitude: -121.10249897412903
+  start: 2005-02-24
+  end: 2005-03-01
+fire_5605544:
+  latitude: 52.06925239041632
+  longitude: -121.6852995513737
+  start: 2005-02-18
+  end: 2005-03-03
+fire_5605533:
+  latitude: 53.380839692827784
+  longitude: -123.09545811638088
+  start: 2005-02-22
+  end: 2005-03-05
+fire_5605546:
+  latitude: 51.97776972307236
+  longitude: -121.46164164257664
+  start: 2005-02-22
+  end: 2005-03-03
+fire_5872888:
+  latitude: 59.21123865235524
+  longitude: -120.91440756653856
+  start: 2005-05-29
+  end: 2005-06-09
+fire_5872606:
+  latitude: 53.55521394367855
+  longitude: -123.8713651754963
+  start: 2005-05-27
+  end: 2005-06-09
+fire_5605542:
+  latitude: 52.19344577724581
+  longitude: -121.5595232753918
+  start: 2005-02-16
+  end: 2005-03-03
+fire_6060615:
+  latitude: 50.329601539392
+  longitude: -121.44575571834086
+  start: 2005-07-28
+  end: 2005-08-10
+fire_5605564:
+  latitude: 50.27284990953458
+  longitude: -120.7884871078595
+  start: 2005-02-24
+  end: 2005-03-05

@@ -1,0 +1,18 @@
+output_bucket: firespreadpredictiontest
+rectangular_size: 0.5
+year: 2020
+fire_24697093:
+  latitude: 57.61292295074052
+  longitude: -121.88338594732276
+  start: 2020-11-21
+  end: 2020-12-04
+fire_24333242:
+  latitude: 50.078633338446856
+  longitude: -116.08103229969782
+  start: 2020-08-13
+  end: 2020-09-11
+fire_24333252:
+  latitude: 49.417928105134365
+  longitude: -119.53550006174446
+  start: 2020-08-18
+  end: 2020-08-24
