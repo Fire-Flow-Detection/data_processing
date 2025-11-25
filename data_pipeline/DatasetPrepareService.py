@@ -67,7 +67,7 @@ class DatasetPrepareService:
         """
 
         if "year" in self.config:
-            filename = "WildfireSpreadTS/" + str(self.config["year"]) + '/' + self.location + '/' + index
+            filename = "CA_wildfire/" + str(self.config["year"]) + '/' + self.location + '/' + index
 
         img = image_collection.max().toFloat()
         image_task = ee.batch.Export.image.toCloudStorage(
