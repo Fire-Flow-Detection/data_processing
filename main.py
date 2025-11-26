@@ -2,13 +2,13 @@ import ee
 import yaml
 import tqdm
 
-from data_pipeline.DatasetPrepareService import DatasetPrepareService
+from DataPreparation.DatasetPrepareService import DatasetPrepareService
 
 if __name__ == '__main__':
 
     # : Enter your desired config file path here. If you just want to recreate the results from the paper, 
     # use the config files in the config folder to download the data belonging to the specified year. 
-    with open("config/bc_fire_2021.yaml", "r", encoding="utf8") as f:
+    with open("config/BCdata/bc_fire_2020.yaml", "r", encoding="utf8") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     # : Enter your gcloud key file path here.
@@ -49,7 +49,8 @@ if __name__ == '__main__':
         try:
             dataset_pre.extract_dataset_from_gee_to_gcloud('32610', n_buffer_days=N_BUFFER_DAYS)
             # Uncomment to download data from gcloud to the local machine right away. Alternatively, you can use the
-            # gcloud command line tool to download the whole dataset at once after this script is done. 
-            dataset_pre.download_data_from_gcloud_to_local()
-        except:
+            # gcloud command line tool to download the whole dataset at once after this script is done.
+            # dataset_pre.download_data_from_gcloud_to_local()
+        except Exception as e:
+            print("ERROR at location", location, ":", repr(e))
             failed_locations.append(location)

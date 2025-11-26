@@ -43,7 +43,7 @@ class FirePred:
         # Time objects we need later. We add "000" to timestamps, because GEE has timestamps with miliseconds,
         # but datetime doesn't by default
         today_string = start_time[:-6].replace("-", "")
-        today = datetime.datetime.strptime(start_time[:-6], '%Y-%m-%d')
+        today = datetime.datetime.strptime(start_time[:10], "%Y-%m-%d")
         today_timestamp = int(datetime.datetime.timestamp(today)) * 1000
 
         # Weather Data
@@ -153,10 +153,16 @@ class FirePred:
         # VIIRS IMG and AF product
         viirs_img = self.viirs.filterDate(start_time, end_time).filterBounds(geometry).select(
             ['M11', 'I2', 'I1']).median()
-        viirs_veg_idc = self.viirs_veg_idx.filterDate((
-                datetime.datetime.strptime(end_time[:-6], '%Y-%m-%d') + datetime.timedelta(-15)).strftime(
-            '%Y-%m-%d'), end_time).filterBounds(geometry).select(['NDVI', 'EVI2']).reduce(
-            ee.Reducer.last())
+        end_date = datetime.datetime.strptime(end_time[:10], "%Y-%m-%d")
+        start_veg = (end_date + datetime.timedelta(days=-15)).strftime("%Y-%m-%d")
+
+        viirs_veg_idc = (
+            self.viirs_veg_idx
+                .filterDate(start_veg, end_time)
+                .filterBounds(geometry)
+                .select(['NDVI', 'EVI2'])
+                .reduce(ee.Reducer.last())
+        )
 
         # VIIRS AF consists only of points, so we need to turn them into a raster image.
         # We also filter out low confidence detections, since they are most likely false positives. 

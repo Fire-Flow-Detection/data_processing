@@ -21,18 +21,52 @@ class DatasetPrepareService:
         self.config = config
         self.location = location
         self.rectangular_size = self.config.get('rectangular_size')
+        #self.latitude = self.config.get(self.location).get('latitude')
+        #self.longitude = self.config.get(self.location).get('longitude')
+        #self.start_time = self.config.get(location).get('start')
+        #self.end_time = self.config.get(location).get('end')
+
+        # Set the area to extract as an image
+        #self.rectangular_size = self.config.get('rectangular_size')
+        #self.geometry = ee.Geometry.Rectangle(
+        #    [self.longitude - self.rectangular_size, self.latitude - self.rectangular_size,
+        #        self.longitude + self.rectangular_size, self.latitude + self.rectangular_size])
+
         self.latitude = self.config.get(self.location).get('latitude')
         self.longitude = self.config.get(self.location).get('longitude')
         self.start_time = self.config.get(location).get('start')
         self.end_time = self.config.get(location).get('end')
 
-        # Set the area to extract as an image
-        self.rectangular_size = self.config.get('rectangular_size')
+        # change to fixed physical size
+        self.patch_km = self.config.get('patch_km', 64)
+
+        # use UTM projection to define rectangular area
+        proj_utm = ee.Projection('EPSG:32610')
+
+        # Fire point center (longitude, latitude)
+        center_ll = ee.Geometry.Point([self.longitude, self.latitude])
+
+        # Transform to UTM coordinates (units: meters)
+        center_utm = center_ll.transform(proj_utm, 1)
+        coords = ee.List(center_utm.coordinates())
+        x = ee.Number(coords.get(0))  # UTM x (m)
+        y = ee.Number(coords.get(1))  # UTM y (m)
+
+        # Half side length (meters): patch_km * 1000 / 2
+        half_size_m = ee.Number(self.patch_km).multiply(1000).divide(2)
+
+        # 
         self.geometry = ee.Geometry.Rectangle(
-            [self.longitude - self.rectangular_size, self.latitude - self.rectangular_size,
-                self.longitude + self.rectangular_size, self.latitude + self.rectangular_size])
+            [x.subtract(half_size_m),
+             y.subtract(half_size_m),
+             x.add(half_size_m),
+             y.add(half_size_m)],
+            proj_utm,
+            False  # geodesic=False
+        )
 
         self.scale_dict = {"FirePred": 375}
+
 
     def cast_to_uint8(self, image):
         return image.multiply(512).uint8()
@@ -51,9 +85,11 @@ class DatasetPrepareService:
         
 
         satellite_client = FirePred()
-        img_collection = satellite_client.compute_daily_features(date_of_interest + 'T' + time_stamp_start,
-                                                                 date_of_interest + 'T' + time_stamp_end,
-                                                                 self.geometry)        
+        img_collection = satellite_client.compute_daily_features(
+            date_of_interest + 'T00:00:00',
+            date_of_interest + 'T23:59:59',
+            self.geometry
+        )      
         return img_collection
 
     def download_image_to_gcloud(self, image_collection, index:str, utm_zone:str):
@@ -67,7 +103,7 @@ class DatasetPrepareService:
         """
 
         if "year" in self.config:
-            filename = "CA_wildfire/" + str(self.config["year"]) + '/' + self.location + '/' + index
+            filename = "bc_wildfire/" + str(self.config["year"]) + '/' + self.location + '/' + index
 
         img = image_collection.max().toFloat()
         image_task = ee.batch.Export.image.toCloudStorage(
@@ -78,7 +114,7 @@ class DatasetPrepareService:
             scale=self.scale_dict.get("FirePred"),
             crs='EPSG:' + utm_zone,
             maxPixels=1e13,
-            region=self.geometry.toGeoJSON()['coordinates'],
+            region=self.geometry,
         )
         print('Start with image task (id: {}).'.format(image_task.id))
         image_task.start()
